@@ -43,27 +43,35 @@ class PDF_Proc:
     txt_dir = "txt_output/"
     proc_dir = "processed/"
     ocr_dir = "ocr_req/"
+    burst_dir = "tmp/burst/"
+    image_dir = "tmp/image/"
     curr_dir = os.getcwd() + '/'
 
     #member variables
-    folders = { "txt_dir": txt_dir, "proc_dir":proc_dir, "ocr_dir":ocr_dir }
-
+    folders = { "txt_dir": txt_dir, "proc_dir":proc_dir, "ocr_dir":ocr_dir, "burst_dir":burst_dir, "image_dir":image_dir }
+    print folders
     def __init__(self):
         """
         """
         print "init"
 
-    def run_PDFToText(self, directory=curr_dir):
+    def init_dirs( self, directory):
         """
         """
-
-      #if folder exists, delete all files
-        #create folder
         for f in self.folders.keys():
             self.folders[f] = directory + self.folders[f]
             if os.path.isdir(self.folders[f]):
                 shutil.rmtree(self.folders[f])
+            print self.folders[f]
             self.mkdir_p(self.folders[f])
+
+    def run_PDFToText(self, directory=curr_dir):
+        """
+        """
+
+        #if folder exists, delete all files
+        #create folder
+        self.init_dirs(directory)
 
         files = iterate_folder(directory, "*.pdf")
         for file in files:
@@ -80,15 +88,25 @@ class PDF_Proc:
             if size > 200:
                 shutil.copyfile( t_path, self.folders['proc_dir'] )
             else:
-                txt_name = os.path.basename(tfile)
-                pdf_name = txt_name[:-3] + "pdf"
+                #remove txt from fname, replace with pdf
+                pdf_name = os.path.basename(tfile)[:-3] + "pdf"
                 shutil.copyfile( directory + pdf_name, self.folders['ocr_dir'] + pdf_name )
+                os.remove(t_path)
 
-    def run_PDFTK(self, directory):
+    def run_PDFTK(self, directory=None):#weird hack, can't assign global as default?
         """
         """
-        print ""
-#        task = subprocess.Popen(['pdftk',
+        if not directory:
+              directory = self.folders['ocr_dir']
+        print directory
+        files = os.listdir(directory)
+        for file in files:
+            outname = self.folders["burst_dir"] + "%04d.pdf"
+            print "f[%s]on[%s]"%(file, outname)
+            task = subprocess.Popen(['pdftk', file, "burst", "output", outname])
+            task.wait()
+
+            
     def mkdir_p(self, path):
         """
         """
